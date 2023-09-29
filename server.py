@@ -35,18 +35,11 @@ class MyWebServer(socketserver.BaseRequestHandler):
     __IS_DIR = 1
     __BAD_PATH = 2
     __FILE_NOT_FOUND = 3
+    __HTML_CONTENT = "text/html"
+    __CSS_CONTENT = "text/css"
 
     # TODO IMPORTANT TEST LINUX
-    
-    # TODO SERVE FROM WWW
-    # TODO REGECT NON GET 405 Method Not Allowed
-    # TODO MIME TYPES FOR HTML, CSS
-    # TODO RETURN index.html FROM DIRECTORIES (ie, end with /)
-    # TODO IF NOT ENDING IN MIMETYPE OR /, 301 REDIRECT TO PATH WITH / END
-    # TODO 404 NOT FOUND
-    # TODO TEST WITH SCRIPT, FIREFOX, CHROMIUM 127.0.0.1:8080
-
-    # NOTE probably optional, should check http
+    # NOTE probably not neccessary, should check http
 
     def handle(self):
         """
@@ -58,24 +51,26 @@ class MyWebServer(socketserver.BaseRequestHandler):
         # decode request
         request = self.data.decode("utf-8").split("\n")
         request_head = request[0].split()
-        #print("\n" + request[0])
 
         if len(request_head) == 3:
             method, path, protocol = request_head
         else:
             print("request head parsing error: more than 3 params")
 
-        path_status = self.__check_path(path) # TODO catch type errors with path argument
+        path_status = self.__check_path(path)
 
         # handle request
         if not method.upper() == "GET":
             self.__405_response()
-        elif path_status == self.__IS_FILE:
-            data = self.__get_files(path) # TODO ASSIGNMENT
-            self.__200_response(data)   # TODO ADD BODY
-        elif path_status == self.__IS_DIR:
-            data = self.__get_files(path)
-            self.__200_response(data)
+        elif path_status == self.__IS_FILE or path_status == self.__IS_DIR:
+            data = self.__get_files(path, path_status)
+            if path.endswith(".html") or path.endswith("/"):
+                self.__200_response(data, self.__HTML_CONTENT)
+            elif path.endswith(".css"):
+                self.__200_response(data, self.__CSS_CONTENT)
+            else:
+                print("error: should never hit this")
+
         elif path_status == self.__BAD_PATH:
             self.__301_response(path) # TODO TEST
         elif path_status == self.__FILE_NOT_FOUND:
@@ -96,36 +91,50 @@ class MyWebServer(socketserver.BaseRequestHandler):
             return self.__BAD_PATH
         elif not path[:4] == "/www":
             # TODO CHECK IF WE ONLY SERVE ./www
+            print("not /www")
             return self.__FILE_NOT_FOUND
         elif os.path.isfile(path):
+            print("found file")
             return self.__IS_FILE
         elif os.path.isdir(path):
+            print("found dir")
             return self.__IS_DIR
         else:
+            print("no such file/dir")
             return self.__FILE_NOT_FOUND
 
-    def __get_files(self, path):
+    def __get_files(self, path: str, path_type: int):
         """
         Retrieves data from files
 
         params
         path: the path data is being requested from
+        path_type: whether the path is a file or a directory
 
         returns: the data at the path.
         """
-        pass
+        if path_type == self.__IS_FILE:
+            with open(path, "r") as f:
+                data = f.read()
+        elif path_type == self.__IS_DIR:
+            with open(path + "index.html", "r") as f:
+                data = f.read()
+        else:
+            print("error: should never hit this check")
 
-    def __200_response(self, data):
+    def __200_response(self, data: str, content_type: str):
         """
         Sends a 200 response with the data requested
 
         params
         data: the data at the requested URL
+        content_type: value of the Content-Type header field
         """
-        response = b"HTTP/1.1 200 OK\r\n"
-        # TODO DATA BODY, rest of header
+        response = "HTTP/1.1 200 OK\r\nContent-Type: " + content_type + "\r\n" + data
+        print(response)
+        self.request.sendall(bytearray(response))
 
-    def __301_response(self, bad_path):
+    def __301_response(self, bad_path: str):
         """
         Sends a 301 response. Redirects to the same path with a "/" char appended
 
