@@ -28,6 +28,8 @@ import os
 
 # try: curl -v -X GET http://127.0.0.1:8080/
 
+HOST = "localhost"
+PORT = 8080
 
 class MyWebServer(socketserver.BaseRequestHandler):
 
@@ -56,9 +58,11 @@ class MyWebServer(socketserver.BaseRequestHandler):
             method, path, protocol = request_head
         else:
             print("request head parsing error: more than 3 params")
+            return
 
-        path_status = self.__check_path(path)
+        # check path
         path = os.getcwd() + path
+        path_status = self.__check_path(path)
         print(path)
 
         # handle request
@@ -90,9 +94,10 @@ class MyWebServer(socketserver.BaseRequestHandler):
 
         returns: a predefined constant indicating the status of the path
         """
+        print(path)
         if not (path.endswith("/") or path.endswith(".html") or path.endswith(".css")):
             return self.__BAD_PATH
-        elif not path[:4] == "/www":
+        elif not os.path.relpath(path)[:3] == "www":
             # TODO CHECK IF WE ONLY SERVE ./www
             print("not /www")
             return self.__FILE_NOT_FOUND
@@ -102,6 +107,8 @@ class MyWebServer(socketserver.BaseRequestHandler):
         elif os.path.isdir(path):
             print("found dir")
             return self.__IS_DIR
+        elif os.path.exists(path):
+            print("ELKD+)SIF")
         else:
             print("no such file/dir")
             return self.__FILE_NOT_FOUND
@@ -125,6 +132,8 @@ class MyWebServer(socketserver.BaseRequestHandler):
         else:
             print("error: should never hit this check")
 
+        return data
+
     def __200_response(self, data: str, content_type: str):
         """
         Sends a 200 response with the data requested
@@ -133,20 +142,23 @@ class MyWebServer(socketserver.BaseRequestHandler):
         data: the data at the requested URL
         content_type: value of the Content-Type header field
         """
-        response = "HTTP/1.1 200 OK\r\nContent-Type: " + content_type + "\r\n" + data
+        response = "HTTP/1.1 200 OK\r\nContent-Type: " + content_type + "\r\n" + data + "\r\n"
         print(response)
-        self.request.sendall(bytearray(response))
+        self.request.sendall(bytearray(response, "utf-8"))
+        print("done sending")
 
-    def __301_response(self, bad_path: str):
+    def __301_response(self, path: str):
         """
         Sends a 301 response. Redirects to the same path with a "/" char appended
 
         params
         bad_path: the path recieved with the inital request
         """
-        path = bad_path + "/"
-        print("301 Moved Permanently:" + path)
-        self.request.sendall(bytearray("HTTP/1.1 301 Moved Permanently\r\nLocation: " + path + "\r\n"))
+        print("redirecting request originally to: " + path)
+        path = path[len(os.getcwd()):] + "/"
+        print("HTTP/1.1 301 Moved Permanently\r\nLocation: http://" + HOST + ":" + str(PORT) + path + "\r\n")
+        self.request.sendall(bytearray("HTTP/1.1 301 Moved Permanently\r\nLocation: http://" + HOST + ":" + str(PORT) + path, "utf-8"))
+        print("done sending")
 
     def __404_response(self):
         """
@@ -155,6 +167,7 @@ class MyWebServer(socketserver.BaseRequestHandler):
         # TODO TEST
         print("404 Not Found")
         self.request.sendall(bytearray("HTTP/1.1 404 Not Found\r\n", "utf-8"))
+        print("done sending")
 
     def __405_response(self):
         """
@@ -162,9 +175,9 @@ class MyWebServer(socketserver.BaseRequestHandler):
         """
         print("405 Method Not Allowed")
         self.request.sendall(bytearray("HTTP/1.1 405 Method Not Allow\r\n", "utf-8"))
+        print("done sending")
 
 if __name__ == "__main__":
-    HOST, PORT = "localhost", 8080
 
     socketserver.TCPServer.allow_reuse_address = True
     # Create the server, binding to localhost on port 8080
