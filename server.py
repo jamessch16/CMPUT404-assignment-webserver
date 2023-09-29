@@ -58,7 +58,8 @@ class MyWebServer(socketserver.BaseRequestHandler):
             print("request head parsing error: more than 3 params")
 
         path_status = self.__check_path(path)
-        path = os.getcwd() + path[1:]
+        path = os.getcwd() + path
+        print(path)
 
         # handle request
         if not method.upper() == "GET":
