@@ -57,6 +57,7 @@ class MyWebServer(socketserver.BaseRequestHandler):
             method, path, protocol = request_head
         else:
             print("request head parsing error: more than 3 params")
+            self.__404_response()
             return
 
         # check path
@@ -85,13 +86,12 @@ class MyWebServer(socketserver.BaseRequestHandler):
                 print("error: should never hit this")
 
         elif path_status == self.__BAD_PATH:
-            self.__301_response(path) # TODO TEST
+            self.__301_response(path)
         elif path_status == self.__FILE_NOT_FOUND:
-            print("depricated: should never hit")
-            self.__404_response() # TODO TEST
+            self.__404_response()
         else:
             print("error: this check should never be hit")
-            self.__405_response()
+            self.__404_response()
 
     def __check_path(self, path: str):
         """
@@ -109,6 +109,8 @@ class MyWebServer(socketserver.BaseRequestHandler):
         print(path)
         if not (path.endswith("/") or path.endswith(".html") or path.endswith(".css")):
             return self.__BAD_PATH
+        if path.startswith("./www/../"):
+            return self.__FILE_NOT_FOUND
         elif path.endswith(".css") or path.endswith(".html"):
             print("found file")
             return self.__IS_FILE
@@ -156,10 +158,10 @@ class MyWebServer(socketserver.BaseRequestHandler):
         data: the data at the requested URL
         content_type: value of the Content-Type header field
         """
-        response = "HTTP/1.1 200 OK\r\nContent-Type: " + content_type + "\r\n" + data + "\r\n"
+        response = "HTTP/1.1 200 OK\r\nContent-Type: " + content_type + "\r\n\r\n" + data + "\r\n"
         print(response)
         self.request.sendall(bytearray(response, "utf-8"))
-        print("done sending")
+        print("done sending\n")
 
     def __301_response(self, path: str):
         """
@@ -172,7 +174,7 @@ class MyWebServer(socketserver.BaseRequestHandler):
         path = path[5:] + "/"
         print("HTTP/1.1 301 Moved Permanently\r\nLocation: http://" + HOST + ":" + str(PORT) + path + "\r\n")
         self.request.sendall(bytearray("HTTP/1.1 301 Moved Permanently\r\nLocation: http://" + HOST + ":" + str(PORT) + path, "utf-8"))
-        print("done sending")
+        print("done sending\n")
 
     def __404_response(self):
         """
@@ -181,7 +183,7 @@ class MyWebServer(socketserver.BaseRequestHandler):
         # TODO TEST
         print("404 Not Found")
         self.request.sendall(bytearray("HTTP/1.1 404 Not Found\r\n", "utf-8"))
-        print("done sending")
+        print("done sending\n")
 
     def __405_response(self):
         """
@@ -189,7 +191,7 @@ class MyWebServer(socketserver.BaseRequestHandler):
         """
         print("405 Method Not Allowed")
         self.request.sendall(bytearray("HTTP/1.1 405 Method Not Allow\r\n", "utf-8"))
-        print("done sending")
+        print("done sending\n")
 
 if __name__ == "__main__":
 
