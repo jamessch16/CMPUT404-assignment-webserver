@@ -1,7 +1,6 @@
 #  coding: utf-8 
 import socketserver
 import re
-import os
 
 # Copyright 2013 Abram Hindle, Eddie Antonio Santos
 # 
@@ -61,7 +60,10 @@ class MyWebServer(socketserver.BaseRequestHandler):
             return
 
         # check path
-        path = os.getcwd() + path
+
+        # TODO REMOVE OS
+
+        path = "./www" + path
         path_status = self.__check_path(path)
         print(path)
 
@@ -69,7 +71,12 @@ class MyWebServer(socketserver.BaseRequestHandler):
         if not method.upper() == "GET":
             self.__405_response()
         elif path_status == self.__IS_FILE or path_status == self.__IS_DIR:
-            data = self.__get_files(path, path_status)
+            try:
+                data = self.__get_files(path, path_status)
+            except FileNotFoundError:
+                self.__404_response()
+                return
+
             if path.endswith(".html") or path.endswith("/"):
                 self.__200_response(data, self.__HTML_CONTENT)
             elif path.endswith(".css"):
@@ -80,6 +87,7 @@ class MyWebServer(socketserver.BaseRequestHandler):
         elif path_status == self.__BAD_PATH:
             self.__301_response(path) # TODO TEST
         elif path_status == self.__FILE_NOT_FOUND:
+            print("depricated: should never hit")
             self.__404_response() # TODO TEST
         else:
             print("error: this check should never be hit")
@@ -87,31 +95,29 @@ class MyWebServer(socketserver.BaseRequestHandler):
 
     def __check_path(self, path: str):
         """
-        Checks if a requested path is valid and exists.
+        Checks the type of the path.
 
         params
         path: the requested path
 
-        returns: a predefined constant indicating the status of the path
+        returns: a predefined constant indicating the type of resource at the path
         """
+
+        # TODO REMOVE OS
+        # TODO make root www
+
         print(path)
         if not (path.endswith("/") or path.endswith(".html") or path.endswith(".css")):
             return self.__BAD_PATH
-        elif not os.path.relpath(path)[:3] == "www":
-            # TODO CHECK IF WE ONLY SERVE ./www
-            print("not /www")
-            return self.__FILE_NOT_FOUND
-        elif os.path.isfile(path):
+        elif path.endswith(".css") or path.endswith(".html"):
             print("found file")
             return self.__IS_FILE
-        elif os.path.isdir(path):
+        elif path.endswith("/"):
             print("found dir")
             return self.__IS_DIR
-        elif os.path.exists(path):
-            print("ELKD+)SIF")
         else:
-            print("no such file/dir")
-            return self.__FILE_NOT_FOUND
+            print("error: should never hit")
+            return None
 
     def __get_files(self, path: str, path_type: int):
         """
@@ -123,16 +129,24 @@ class MyWebServer(socketserver.BaseRequestHandler):
 
         returns: the data at the path.
         """
-        if path_type == self.__IS_FILE:
-            with open(path, "r") as f:
-                data = f.read()
-        elif path_type == self.__IS_DIR:
-            with open(path + "index.html", "r") as f:
-                data = f.read()
-        else:
-            print("error: should never hit this check")
 
-        return data
+        # TODO REMOVE OS.
+        # TODO PROBABLY MERGE check_path into here
+        # TODO make root www
+        try:
+            if path_type == self.__IS_FILE:
+                with open(path, "r") as f:
+                    data = f.read()
+            elif path_type == self.__IS_DIR:
+                with open(path + "index.html", "r") as f:
+                    data = f.read()
+            else:
+                print("error: should never hit this check")
+
+            return data
+        except FileNotFoundError:
+            print("raising file not found error internal")
+            raise FileNotFoundError
 
     def __200_response(self, data: str, content_type: str):
         """
@@ -155,7 +169,7 @@ class MyWebServer(socketserver.BaseRequestHandler):
         bad_path: the path recieved with the inital request
         """
         print("redirecting request originally to: " + path)
-        path = path[len(os.getcwd()):] + "/"
+        path = path[5:] + "/"
         print("HTTP/1.1 301 Moved Permanently\r\nLocation: http://" + HOST + ":" + str(PORT) + path + "\r\n")
         self.request.sendall(bytearray("HTTP/1.1 301 Moved Permanently\r\nLocation: http://" + HOST + ":" + str(PORT) + path, "utf-8"))
         print("done sending")
