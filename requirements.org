@@ -25,8 +25,8 @@
 
 ** Requirements
    - [X] The webserver can serve files from ./www
-   - [ ] The webserver can be run using the runner.sh file
-   - [ ] The webserver can pass all the tests in freetests.py
+   - [X] The webserver can be run using the runner.sh file
+   - [X] The webserver can pass all the tests in freetests.py
    - [ ] The webserver can pass all the tests in not-free-tests.py
      (you only have part of this one, I reserve the right to add tests)
    - [X] The webserver supports mime-types for HTML
@@ -36,14 +36,14 @@
    - [X] The webserver can server 404 errors for paths not found
    - [X] The webserver works with Firefox and Chromium
      http://127.0.0.1:8080/
-   - [ ] The webserver can serve CSS properly so that the front page
+   - [X] The webserver can serve CSS properly so that the front page
      has an orange h1 header.
-   - [ ] I can check out the source code via an HTTP git URL
+   - [X] I can check out the source code via an HTTP git URL
    - [X] Provide 1 screenshot (commit and push it!) of Firefox at http://127.0.0.1:8080/ as ./root.png in the root of the repo
    - [X] Provide 1 screenshot (commit and push it!) of Firefox at http://127.0.0.1:8080/deep/ as ./deep.png in the root of the repo
    - [X] Return a status code of "405 Method Not Allowed" for any method you cannot handle (POST/PUT/DELETE) 
    - [X] Must use 301 to correct paths such as http://127.0.0.1:8080/deep to http://127.0.0.1:8080/deep/ (path ending)
-   - [ ] Tests must execute within 180 seconds.
+   - [X] Tests must execute within 180 seconds.
 
 ** Restrictions
    - [ ] Use Python3
