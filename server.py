@@ -27,7 +27,7 @@ import re
 
 # try: curl -v -X GET http://127.0.0.1:8080/
 
-HOST = "localhost"
+HOST = "127.0.0.1"
 PORT = 8080
 
 class MyWebServer(socketserver.BaseRequestHandler):
@@ -39,15 +39,11 @@ class MyWebServer(socketserver.BaseRequestHandler):
     __HTML_CONTENT = "text/html"
     __CSS_CONTENT = "text/css"
 
-    # TODO IMPORTANT TEST LINUX
-    # NOTE probably not neccessary, should check http
-
     def handle(self):
         """
         Handles any requests to the server
         """
         self.data = self.request.recv(1024).strip()
-        print ("Got a request of: %s\n" % self.data)
 
         # decode request
         request = self.data.decode("utf-8").split("\n")
@@ -61,9 +57,6 @@ class MyWebServer(socketserver.BaseRequestHandler):
             return
 
         # check path
-
-        # TODO REMOVE OS
-
         path = "./www" + path
         path_status = self.__check_path(path)
         print(path)
@@ -102,10 +95,6 @@ class MyWebServer(socketserver.BaseRequestHandler):
 
         returns: a predefined constant indicating the type of resource at the path
         """
-
-        # TODO REMOVE OS
-        # TODO make root www
-
         print(path)
         if not (path.endswith("/") or path.endswith(".html") or path.endswith(".css")):
             return self.__BAD_PATH
@@ -131,10 +120,6 @@ class MyWebServer(socketserver.BaseRequestHandler):
 
         returns: the data at the path.
         """
-
-        # TODO REMOVE OS.
-        # TODO PROBABLY MERGE check_path into here
-        # TODO make root www
         try:
             if path_type == self.__IS_FILE:
                 with open(path, "r") as f:
@@ -172,17 +157,17 @@ class MyWebServer(socketserver.BaseRequestHandler):
         """
         print("redirecting request originally to: " + path)
         path = path[5:] + "/"
-        print("HTTP/1.1 301 Moved Permanently\r\nLocation: http://" + HOST + ":" + str(PORT) + path + "\r\n")
-        self.request.sendall(bytearray("HTTP/1.1 301 Moved Permanently\r\nLocation: http://" + HOST + ":" + str(PORT) + path, "utf-8"))
+        print("HTTP/1.1 301 Moved Permanently\r\nLocation: " + path + "\r\n")
+        self.request.sendall(bytearray("HTTP/1.1 301 Moved Permanently\r\nLocation: " + path + "\r\nContent-Length: 0", "utf-8"))
         print("done sending\n")
 
     def __404_response(self):
         """
         Sends a 404 response
         """
-        # TODO TEST
+        content = '<!DOCTYPE html><html><head><title>Deeper Example Page</title><meta http-equiv="Content-Type" content="text/html;charset=utf-8"/></head><body><p>Error: 404 Not Found response</p></body></html>'
         print("404 Not Found")
-        self.request.sendall(bytearray("HTTP/1.1 404 Not Found\r\n", "utf-8"))
+        self.request.sendall(bytearray(f"HTTP/1.1 404 Not Found\r\nContent-Type: {self.__HTML_CONTENT}\r\n\r\n{content}\r\n", "utf-8"))
         print("done sending\n")
 
     def __405_response(self):
